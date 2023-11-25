@@ -3,20 +3,6 @@ package components
 import "fmt"
 import "habitus/models"
 
-templ hello(name string) {
-	<button hx-get="/clicked" hx-swap="outerHTML">Hello, { name }</button>
-}
-
-templ clicked() {
-	<div>clicked!</div>
-}
-
-templ headerTemplate(name string) {
-	<header data-testid="headerTemplate">
-		<h1>{ name } </h1>
-	</header>
-}
-
 templ HabitList(habits []models.Habit) {
 	<div id="habit-list">
 		for _, h := range habits {
