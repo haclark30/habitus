@@ -1,0 +1,121 @@
+package components
+
+import "fmt"
+import "habitus/models"
+
+templ hello(name string) {
+	<button hx-get="/clicked" hx-swap="outerHTML">Hello, { name }</button>
+}
+
+templ clicked() {
+	<div>clicked!</div>
+}
+
+templ headerTemplate(name string) {
+	<header data-testid="headerTemplate">
+		<h1>{ name } </h1>
+	</header>
+}
+
+templ HabitList(habits []models.Habit) {
+	<div id="habit-list">
+		for _, h := range habits {
+			@Habit(h)
+		}
+	</div>
+	<br/>
+	<br/>
+	<button hx-get="/habitModal" hx-target="body" hx-swap="beforeend">Add Habit</button>
+}
+
+templ Habit(habit models.Habit) {
+	<div id={ fmt.Sprintf("habit-%v", habit.Id) }>
+		if habit.HasDown {
+			<div>{ habit.Name } | +{ fmt.Sprintf("%d", habit.UpCount) }| -{ fmt.Sprintf("%d", habit.DownCount) } </div>
+		} else {
+			<div>{ habit.Name } | + { fmt.Sprintf("%d", habit.UpCount) }</div>
+		}
+		<button hx-post={ fmt.Sprintf("/%v/up", habit.Id) } hx-swap="outerHTML" hx-target={ fmt.Sprintf("#habit-%v", habit.Id) }>Up</button>
+		if habit.HasDown {
+			<button hx-post={ fmt.Sprintf("/%v/down", habit.Id) } hx-swap="outerHTML" hx-target={ fmt.Sprintf("#habit-%v", habit.Id) }>Down</button>
+		}
+	</div>
+}
+
+templ DailysList(dailys []models.Daily) {
+	<div id="daily-list">
+		for _, d := range dailys {
+			@Daily(d)
+		}
+	</div>
+	<br/>
+	<br/>
+	<button hx-get="/dailyModal" hx-target="body" hx-swap="beforeend">Add Daily</button>
+}
+
+templ Daily(daily models.Daily) {
+	<div>
+		if daily.Done {
+			<input hx-post={ fmt.Sprintf("/%v/done", daily.Id) } type="checkbox" id={ fmt.Sprintf("daily-%v", daily.Id) } checked/>
+		} else {
+			<input hx-post={ fmt.Sprintf("/%v/done", daily.Id) } type="checkbox" id={ fmt.Sprintf("daily-%v", daily.Id) }/>
+		}
+		<label for={ fmt.Sprintf("daily-%v", daily.Id) }>{ daily.Name } </label>
+	</div>
+}
+
+templ modal() {
+	<div id="modal" _="on closeModal remove me">
+		<div class="modal-underlay" _="on click trigger closeModal"></div>
+		<div class="modal-content">
+			{ children... }
+			<button _="on click trigger closeModal">Close</button>
+		</div>
+	</div>
+}
+
+templ HabitModal() {
+	@modal() {
+		<h1>Add Habit</h1>
+		<form hx-put="/habit" hx-target="#habit-list" hx-swap="beforeend" _="on submit trigger closeModal">
+			<label for="habitName">Habit Name:</label>
+			<input type="text" id="habitName" name="habitName"/>
+			<br/>
+			<label for="hasDown">Has Down</label>
+			<input type="checkbox" name="hasDown"/>
+			<input type="submit" value="Submit"/>
+		</form>
+		<br/>
+		<br/>
+	}
+}
+
+templ DailyModal() {
+	@modal() {
+		<h1>Add Daily</h1>
+		<form hx-put="/daily" hx-target="#daily-list" hx-swap="beforeend" _="on submit trigger closeModal">
+			<label for="dailyName">Daily Name:</label>
+			<input type="text" id="dailyName" name="dailyName"/>
+			<br/>
+			<input type="submit" value="Submit"/>
+		</form>
+		<br/>
+		<br/>
+	}
+}
+
+templ Page(habits []models.Habit, dailys []models.Daily) {
+	<html>
+		<head>
+			<script src="/assets/htmx.min.js"></script>
+			<script src="/assets/hyperscript.min.js"></script>
+			<link rel="stylesheet" href="/assets/styles.css"/>
+		</head>
+		<body>
+			@HabitList(habits)
+			<br/>
+			@DailysList(dailys)
+			<br/>
+		</body>
+	</html>
+}
