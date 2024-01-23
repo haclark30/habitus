@@ -16,10 +16,10 @@ type HabitHandler struct {
 }
 
 type HabitService interface {
-	CountUp(int) models.Habit
-	CountDown(int) models.Habit
-	AddHabit(string, bool) models.Habit
-	GetHabits() []models.Habit
+	CountUp(habitId int) models.Habit
+	CountDown(habitId int) models.Habit
+	AddHabit(userId int, habitName string, hasDown bool) models.Habit
+	GetHabits(userId int) []models.Habit
 }
 
 func NewHabitHandler(log *slog.Logger, habitService HabitService) *HabitHandler {
@@ -47,8 +47,8 @@ func (h *HabitHandler) Put(w http.ResponseWriter, r *http.Request) {
 	if formHasDown == "on" {
 		hasDown = true
 	}
-
-	habit := h.HabitService.AddHabit(formHabitName, hasDown)
+	user := r.Context().Value("user").(models.User)
+	habit := h.HabitService.AddHabit(user.Id, formHabitName, hasDown)
 	components.Habit(habit).Render(r.Context(), w)
 }
 

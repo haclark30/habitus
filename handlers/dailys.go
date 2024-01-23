@@ -16,9 +16,9 @@ type DailyHandler struct {
 }
 
 type DailyService interface {
-	CompleteDaily(int) models.Daily
-	AddDaily(string) models.Daily
-	GetDailys() []models.Daily
+	CompleteDaily(dailyId int) models.Daily
+	AddDaily(userId int, dailyName string) models.Daily
+	GetDailys(userId int) []models.Daily
 }
 
 func NewDailyHandler(log *slog.Logger, dailyService DailyService) *DailyHandler {
@@ -34,7 +34,8 @@ func (d *DailyHandler) CompleteDaily(w http.ResponseWriter, r *http.Request) {
 func (d *DailyHandler) Put(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	formDailyName := r.Form.Get("dailyName")
-	daily := d.DailyService.AddDaily(formDailyName)
+	user := r.Context().Value("user").(models.User)
+	daily := d.DailyService.AddDaily(user.Id, formDailyName)
 	components.Daily(daily).Render(r.Context(), w)
 }
 

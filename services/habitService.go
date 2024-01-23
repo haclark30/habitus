@@ -30,10 +30,10 @@ func (hs Habit) CountDown(habitId int) models.Habit {
 	return hs.Habits.UpdateHabit(habit)
 }
 
-func (hs Habit) AddHabit(habitName string, hasDown bool) models.Habit {
-	return hs.Habits.AddHabit(habitName, hasDown)
+func (hs Habit) AddHabit(userId int, habitName string, hasDown bool) models.Habit {
+	return hs.Habits.AddHabit(userId, habitName, hasDown)
 }
 
-func (hs Habit) GetHabits() []models.Habit {
-	return hs.Habits.GetHabits()
+func (hs Habit) GetHabits(userId int) []models.Habit {
+	return hs.Habits.GetHabits(userId)
 }

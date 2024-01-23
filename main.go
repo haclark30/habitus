@@ -1,57 +1,83 @@
 package main
 
 import (
+	"database/sql"
 	"habitus/db"
 	"habitus/handlers"
+	"habitus/middleware"
 	"habitus/models"
 	"habitus/services"
+	"log"
 	"log/slog"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
+	chiMiddleware "github.com/go-chi/chi/v5/middleware"
+	"github.com/stackus/dotenv"
+	_ "github.com/tursodatabase/libsql-client-go/libsql"
+	_ "modernc.org/sqlite"
 )
 
 var habits []models.Habit
 var dailys []models.Daily
 
 func main() {
-	habits = []models.Habit{
-		{Id: 0, Name: "Water", HasDown: true},
-		{Id: 1, Name: "Walk"},
-		{Id: 2, Name: "Read"},
-		{Id: 3, Name: "Chores"},
+	err := dotenv.Load()
+	if err != nil {
+		log.Fatal("error loading env", "err", err)
+	}
+	// dbUrl := fmt.Sprintf("%s?authToken=%s", os.Getenv("TURSO_URL"), os.Getenv("TURSO_AUTH_TOKEN"))
+
+	dbUrl := "file:my_db.sqlite"
+
+	dbase, err := sql.Open("libsql", dbUrl)
+	if err != nil {
+		log.Fatal("error connecting to db", "err", err)
 	}
 
-	dailys = []models.Daily{
-		{Id: 0, Name: "No Snooze", Due: true},
-		{Id: 1, Name: "Read", Due: true},
-	}
-
-	habitStore := db.NewHabitStore(&habits)
+	habitStore := db.NewHabitStore(dbase)
 	habitService := services.NewHabit(slog.Default(), habitStore)
 	habitHandler := handlers.NewHabitHandler(slog.Default(), habitService)
 
-	dailyStore := db.NewDailyStore(&dailys)
+	dailyStore := db.NewDailyStore(slog.Default(), dbase)
 	dailyService := services.NewDaily(slog.Default(), dailyStore)
 	dailyHandler := handlers.NewDailyHandler(slog.Default(), dailyService)
 
+	userStore := db.NewUserStore(slog.Default(), dbase)
+	userService := services.NewUserService(slog.Default(), userStore)
+	sessionStore := db.NewSessionStore(slog.Default(), dbase)
+	sessionService := services.NewSessionService(slog.Default(), sessionStore, userStore)
+	userHandler := handlers.NewUserHandler(slog.Default(), userService, sessionService)
+
 	indexHandler := handlers.NewIndexHandler(habitService, dailyService)
 
-	r := chi.NewRouter()
+	sessionManager := middleware.NewSessionManager(sessionService)
+
+	router := chi.NewRouter()
 	fs := http.StripPrefix("/assets", http.FileServer(http.Dir("assets")))
-	r.Use(middleware.Logger)
-	r.Handle("/assets/*", fs)
-	r.Get("/", indexHandler.Get)
+	router.Use(chiMiddleware.Logger)
+	router.Handle("/assets/*", fs)
 
-	r.Post("/{habitId}/up", habitHandler.CountUp)
-	r.Post("/{habitId}/down", habitHandler.CountDown)
-	r.Put("/habit", habitHandler.Put)
-	r.Get("/habitModal", habitHandler.Modal)
+	router.Group(func(r chi.Router) {
+		r.Use(sessionManager.Middleware)
 
-	r.Post("/{dailyId}/done", dailyHandler.CompleteDaily)
-	r.Put("/daily", dailyHandler.Put)
-	r.Get("/dailyModal", dailyHandler.Modal)
+		r.Get("/", indexHandler.Get)
 
-	http.ListenAndServe(":3000", r)
+		r.Post("/{habitId}/up", habitHandler.CountUp)
+		r.Post("/{habitId}/down", habitHandler.CountDown)
+		r.Put("/habit", habitHandler.Put)
+		r.Get("/habitModal", habitHandler.Modal)
+
+		r.Post("/{dailyId}/done", dailyHandler.CompleteDaily)
+		r.Put("/daily", dailyHandler.Put)
+		r.Get("/dailyModal", dailyHandler.Modal)
+		r.Get("/welcome", userHandler.GetWelcome)
+	})
+	router.Get("/login", userHandler.GetLogin)
+	router.Post("/login", userHandler.PostLogin)
+	router.Get("/signup", userHandler.GetSignup)
+	router.Post("/signup", userHandler.PostSignup)
+	router.Get("/logout", userHandler.Logout)
+
+	http.ListenAndServe(":3000", router)
 }

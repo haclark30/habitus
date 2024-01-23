@@ -1,2 +1,5 @@
 *.http
+*.sqlite
+.vscode/*
 tmp/
+.env

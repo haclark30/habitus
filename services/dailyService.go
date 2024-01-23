@@ -18,8 +18,8 @@ func NewDaily(log *slog.Logger, dailys db.DailyStore) Daily {
 	}
 }
 
-func (ds Daily) AddDaily(dailyName string) models.Daily {
-	return ds.Dailys.AddDaily(dailyName)
+func (ds Daily) AddDaily(userId int, dailyName string) models.Daily {
+	return ds.Dailys.AddDaily(userId, dailyName)
 }
 
 func (ds Daily) CompleteDaily(dailyId int) models.Daily {
@@ -29,6 +29,6 @@ func (ds Daily) CompleteDaily(dailyId int) models.Daily {
 	return daily
 }
 
-func (ds Daily) GetDailys() []models.Daily {
-	return ds.Dailys.GetDailys()
+func (ds Daily) GetDailys(userId int) []models.Daily {
+	return ds.Dailys.GetDailys(userId)
 }

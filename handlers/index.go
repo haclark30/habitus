@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"habitus/components"
+	"habitus/models"
 	"net/http"
 )
 
@@ -15,5 +16,11 @@ func NewIndexHandler(habitService HabitService, dailyService DailyService) *Inde
 }
 
 func (i *IndexHandler) Get(w http.ResponseWriter, r *http.Request) {
-	components.Page(i.habitService.GetHabits(), i.dailyService.GetDailys()).Render(r.Context(), w)
+	userCtx := r.Context().Value("user")
+	if userCtx == nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+	user := userCtx.(models.User)
+	components.Page(i.habitService.GetHabits(user.Id), i.dailyService.GetDailys(user.Id)).Render(r.Context(), w)
 }
