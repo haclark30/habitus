@@ -11,7 +11,10 @@ templ HabitList(habits []models.Habit) {
 	</div>
 	<br/>
 	<br/>
-	<button hx-get="/habitModal" hx-target="body" hx-swap="beforeend">Add Habit</button>
+	<button class="btn" hx-get="/habitModal" hx-target="#htmx_modal" hx-trigger="click" hx-on:click="habit_modal.showModal()">Add Habit</button>
+	<dialog id="habit_modal" class="modal">
+		<div class="modal-box" id="htmx_modal"></div>
+	</dialog>
 }
 
 templ Habit(habit models.Habit) {
@@ -21,9 +24,9 @@ templ Habit(habit models.Habit) {
 		} else {
 			<div>{ habit.Name } | + { fmt.Sprintf("%d", habit.UpCount) }</div>
 		}
-		<button hx-post={ fmt.Sprintf("/%v/up", habit.Id) } hx-swap="outerHTML" hx-target={ fmt.Sprintf("#habit-%v", habit.Id) }>Up</button>
+		<button class="btn" hx-post={ fmt.Sprintf("/%v/up", habit.Id) } hx-swap="outerHTML" hx-target={ fmt.Sprintf("#habit-%v", habit.Id) }>Up</button>
 		if habit.HasDown {
-			<button hx-post={ fmt.Sprintf("/%v/down", habit.Id) } hx-swap="outerHTML" hx-target={ fmt.Sprintf("#habit-%v", habit.Id) }>Down</button>
+			<button class="btn" hx-post={ fmt.Sprintf("/%v/down", habit.Id) } hx-swap="outerHTML" hx-target={ fmt.Sprintf("#habit-%v", habit.Id) }>Down</button>
 		}
 	</div>
 }
@@ -36,7 +39,7 @@ templ DailysList(dailys []models.Daily) {
 	</div>
 	<br/>
 	<br/>
-	<button hx-get="/dailyModal" hx-target="body" hx-swap="beforeend">Add Daily</button>
+	<button class="btn" hx-get="/dailyModal" hx-target="body" hx-swap="beforeend">Add Daily</button>
 }
 
 templ Daily(daily models.Daily) {
@@ -55,25 +58,28 @@ templ modal() {
 		<div class="modal-underlay" _="on click trigger closeModal"></div>
 		<div class="modal-content">
 			{ children... }
-			<button _="on click trigger closeModal">Close</button>
+			<button class="btn" _="on click trigger closeModal">Close</button>
 		</div>
 	</div>
 }
 
 templ HabitModal() {
-	@modal() {
-		<h1>Add Habit</h1>
-		<form hx-put="/habit" hx-target="#habit-list" hx-swap="beforeend" _="on submit trigger closeModal">
+	<h1>Add Habit</h1>
+	<form method="dialog">
+		<button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</button>
+	</form>
+	<div class="modal-action">
+		<form hx-put="/habit" hx-target="#habit-list" hx-swap="beforeend" hx-on:submit="habit_modal.close()">
 			<label for="habitName">Habit Name:</label>
 			<input type="text" id="habitName" name="habitName"/>
 			<br/>
 			<label for="hasDown">Has Down</label>
 			<input type="checkbox" name="hasDown"/>
-			<input type="submit" value="Submit"/>
+			<button class="btn" type="submit">Submit</button>
 		</form>
-		<br/>
-		<br/>
-	}
+	</div>
+	<br/>
+	<br/>
 }
 
 templ DailyModal() {
@@ -95,7 +101,7 @@ templ Page(habits []models.Habit, dailys []models.Daily) {
 		<head>
 			<script src="/assets/htmx.min.js"></script>
 			<script src="/assets/hyperscript.min.js"></script>
-			<link rel="stylesheet" href="/assets/styles.css"/>
+			<link rel="stylesheet" href="/assets/output.css"/>
 		</head>
 		<body>
 			@HabitList(habits)
@@ -112,7 +118,7 @@ templ Login() {
 		<head>
 			<script src="/assets/htmx.min.js"></script>
 			<script src="/assets/hyperscript.min.js"></script>
-			<link rel="stylesheet" href="/assets/styles.css"/>
+			<link rel="stylesheet" href="/assets/output.css"/>
 		</head>
 		<body>
 			<form hx-post="/login">
@@ -132,7 +138,7 @@ templ Signup() {
 		<head>
 			<script src="/assets/htmx.min.js"></script>
 			<script src="/assets/hyperscript.min.js"></script>
-			<link rel="stylesheet" href="/assets/styles.css"/>
+			<link rel="stylesheet" href="/assets/output.css"/>
 		</head>
 		<body>
 			<form hx-post="/signup">
@@ -152,7 +158,7 @@ templ Welcome(user models.User) {
 		<head>
 			<script src="/assets/htmx.min.js"></script>
 			<script src="/assets/hyperscript.min.js"></script>
-			<link rel="stylesheet" href="/assets/styles.css"/>
+			<link rel="stylesheet" href="/assets/output.css"/>
 		</head>
 		<body>
 			<h1>Welcome, { user.UserName }!</h1>
