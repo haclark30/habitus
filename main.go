@@ -18,8 +18,10 @@ import (
 	_ "modernc.org/sqlite"
 )
 
-var habits []models.Habit
-var dailys []models.Daily
+var (
+	habits []models.Habit
+	dailys []models.Daily
+)
 
 func main() {
 	err := dotenv.Load()

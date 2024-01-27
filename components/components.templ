@@ -39,7 +39,10 @@ templ DailysList(dailys []models.Daily) {
 	</div>
 	<br/>
 	<br/>
-	<button class="btn" hx-get="/dailyModal" hx-target="body" hx-swap="beforeend">Add Daily</button>
+	<button class="btn" hx-get="/dailyModal" hx-target="#htmx_modal_daily" hx-trigger="click" hx-on:click="daily_modal.showModal()">Add Daily</button>
+	<dialog id="daily_modal" class="modal">
+		<div class="modal-box" id="htmx_modal_daily"></div>
+	</dialog>
 }
 
 templ Daily(daily models.Daily) {
@@ -83,17 +86,20 @@ templ HabitModal() {
 }
 
 templ DailyModal() {
-	@modal() {
-		<h1>Add Daily</h1>
-		<form hx-put="/daily" hx-target="#daily-list" hx-swap="beforeend" _="on submit trigger closeModal">
+	<h1>Add Daily</h1>
+	<form method="dialog">
+		<button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</button>
+	</form>
+	<div class="modal-action">
+		<form hx-put="/daily" hx-target="#daily-list" hx-swap="beforeend" hx-on:submit="daily_modal.close()">
 			<label for="dailyName">Daily Name:</label>
 			<input type="text" id="dailyName" name="dailyName"/>
 			<br/>
 			<input type="submit" value="Submit"/>
 		</form>
-		<br/>
-		<br/>
-	}
+	</div>
+	<br/>
+	<br/>
 }
 
 templ Page(habits []models.Habit, dailys []models.Daily) {
