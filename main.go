@@ -73,7 +73,6 @@ func main() {
 		r.Post("/{dailyId}/done", dailyHandler.CompleteDaily)
 		r.Put("/daily", dailyHandler.Put)
 		r.Get("/dailyModal", dailyHandler.Modal)
-		r.Get("/welcome", userHandler.GetWelcome)
 	})
 	router.Get("/login", userHandler.GetLogin)
 	router.Post("/login", userHandler.PostLogin)

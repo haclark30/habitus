@@ -114,7 +114,6 @@ templ Page(habits []models.Habit, dailys []models.Daily) {
 			<br/>
 			@DailysList(dailys)
 			<br/>
-			<a hx-get="/welcome">WELCOME!</a>
 		</body>
 	</html>
 }
@@ -155,19 +154,6 @@ templ Signup() {
 				<br/>
 				<input type="submit" value="Signup"/>
 			</form>
-		</body>
-	</html>
-}
-
-templ Welcome(user models.User) {
-	<html>
-		<head>
-			<script src="/assets/htmx.min.js"></script>
-			<script src="/assets/hyperscript.min.js"></script>
-			<link rel="stylesheet" href="/assets/output.css"/>
-		</head>
-		<body>
-			<h1>Welcome, { user.UserName }!</h1>
 		</body>
 	</html>
 }

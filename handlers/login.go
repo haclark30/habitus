@@ -93,16 +93,6 @@ func (u *UserHandler) PostSignup(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("hx-redirect", "/")
 }
 
-func (u *UserHandler) GetWelcome(w http.ResponseWriter, r *http.Request) {
-	ctxUser := r.Context().Value("user")
-	if ctxUser == nil {
-		w.WriteHeader(http.StatusUnauthorized)
-		return
-	}
-	user := ctxUser.(models.User)
-	components.Welcome(user).Render(r.Context(), w)
-}
-
 func (u *UserHandler) Logout(w http.ResponseWriter, r *http.Request) {
 	http.SetCookie(w, &http.Cookie{
 		Name:     "session_token",

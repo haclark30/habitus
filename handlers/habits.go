@@ -42,11 +42,7 @@ func (h *HabitHandler) Put(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	formHabitName := r.Form.Get("habitName")
 	formHasDown := r.Form.Get("hasDown")
-
-	hasDown := false
-	if formHasDown == "on" {
-		hasDown = true
-	}
+	hasDown := formHasDown == "on"
 	user := r.Context().Value("user").(models.User)
 	habit := h.HabitService.AddHabit(user.Id, formHabitName, hasDown)
 	components.Habit(habit).Render(r.Context(), w)
