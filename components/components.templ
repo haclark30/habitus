@@ -111,6 +111,45 @@ templ DailyModal() {
 	<br/>
 }
 
+templ Header() {
+	<div class="navbar bg-base-100">
+		<div class="navbar-start">
+			<div class="dropdown">
+				<div tabindex="0" role="button" class="btn btn-ghost btn-circle">
+					<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"></path></svg>
+				</div>
+				<ul tabindex="0" class="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-base-100 rounded-box w-52">
+					<li><a>Homepage</a></li>
+					<li><a>Portfolio</a></li>
+					<li><a>About</a></li>
+				</ul>
+			</div>
+		</div>
+		<div class="navbar-center">
+			<a class="btn btn-ghost text-xl">habitus</a>
+		</div>
+		<div class="navbar-end">
+			<div class="dropdown dropdown-end">
+				<div tabindex="0" role="button" class="btn btn-ghost btn-circle avatar">
+					<div class="w-10 rounded-full">
+						<img alt="Tailwind CSS Navbar component" src="https://daisyui.com/images/stock/photo-1534528741775-53994a69daeb.jpg"/>
+					</div>
+				</div>
+				<ul tabindex="0" class="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-base-100 rounded-box w-52">
+					<li>
+						<a class="justify-between">
+							Profile
+							<span class="badge">New</span>
+						</a>
+					</li>
+					<li><a>Settings</a></li>
+					<li><a href="/logout">Logout</a></li>
+				</ul>
+			</div>
+		</div>
+	</div>
+}
+
 templ Page(habits []models.Habit, dailys []models.Daily) {
 	<html>
 		<head>
@@ -119,6 +158,7 @@ templ Page(habits []models.Habit, dailys []models.Daily) {
 			<link rel="stylesheet" href="/assets/output.css"/>
 		</head>
 		<body>
+			@Header()
 			<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
 				@HabitList(habits)
 				@DailysList(dailys)
