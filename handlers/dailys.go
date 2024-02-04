@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"habitus/components"
+	"habitus/middleware"
 	"habitus/models"
 	"log/slog"
 	"net/http"
@@ -34,7 +35,7 @@ func (d *DailyHandler) CompleteDaily(w http.ResponseWriter, r *http.Request) {
 func (d *DailyHandler) Put(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	formDailyName := r.Form.Get("dailyName")
-	user := r.Context().Value("user").(models.User)
+	user := middleware.UserFromContext(r.Context())
 	daily := d.DailyService.AddDaily(user.Id, formDailyName)
 	components.Daily(daily).Render(r.Context(), w)
 }

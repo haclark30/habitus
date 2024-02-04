@@ -6,6 +6,12 @@ import (
 	"net/http"
 )
 
+type key int
+
+const (
+	userKey key = iota
+)
+
 type SessionService interface {
 	GetSession(sessionToken string) (models.User, error)
 	CreateSession(username string) (string, error)
@@ -46,7 +52,16 @@ func (s *SessionManager) Middleware(next http.Handler) http.Handler {
 			return
 		}
 
-		ctx := context.WithValue(r.Context(), "user", user)
+		ctx := context.WithValue(r.Context(), userKey, user)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
+}
+
+func UserFromContext(ctx context.Context) *models.User {
+	user := ctx.Value(userKey)
+	if user == nil {
+		return nil
+	}
+	userVal := user.(models.User)
+	return &userVal
 }

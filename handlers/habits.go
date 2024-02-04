@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"habitus/components"
+	"habitus/middleware"
 	"habitus/models"
 	"log/slog"
 	"net/http"
@@ -43,7 +44,7 @@ func (h *HabitHandler) Put(w http.ResponseWriter, r *http.Request) {
 	formHabitName := r.Form.Get("habitName")
 	formHasDown := r.Form.Get("hasDown")
 	hasDown := formHasDown == "on"
-	user := r.Context().Value("user").(models.User)
+	user := middleware.UserFromContext(r.Context())
 	habit := h.HabitService.AddHabit(user.Id, formHabitName, hasDown)
 	components.Habit(habit).Render(r.Context(), w)
 }
