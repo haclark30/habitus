@@ -2,8 +2,9 @@ package components
 
 import "fmt"
 import "habitus/models"
+import "habitus/services"
 
-templ HabitList(habits []models.Habit) {
+templ HabitList(habits []services.HabitAndLog) {
 	<div id="habit-list">
 		<div class="max-w-sm">
 			<button class="btn" hx-get="/habitModal" hx-target="#htmx_modal" hx-trigger="click" hx-on:click="habit_modal.showModal()">Add Habit</button>
@@ -17,24 +18,24 @@ templ HabitList(habits []models.Habit) {
 	</div>
 }
 
-templ Habit(habit models.Habit) {
-	<div id={ fmt.Sprintf("habit-%v", habit.Id) } class="flex">
-		<button class="btn btn-primary btn-square" hx-post={ fmt.Sprintf("/%v/up", habit.Id) } hx-swap="outerHTML" hx-target={ fmt.Sprintf("#habit-%v", habit.Id) }>
+templ Habit(habitAndLog services.HabitAndLog) {
+	<div id={ fmt.Sprintf("habit-%v", habitAndLog.Habit.ID) } class="flex">
+		<button class={ "btn btn-primary btn-square", templ.KV("btn-disabled", !habitAndLog.Habit.Hasup) } hx-post={ fmt.Sprintf("/%v/%v/up", habitAndLog.Habit.ID, habitAndLog.HabitLog.ID) } hx-swap="outerHTML" hx-target={ fmt.Sprintf("#habit-%v", habitAndLog.Habit.ID) }>
 			<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
 				<path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"></path>
 			</svg>
 		</button>
-		if habit.HasDown {
-			<div>{ habit.Name } | +{ fmt.Sprintf("%d", habit.UpCount) }| -{ fmt.Sprintf("%d", habit.DownCount) } </div>
+		if habitAndLog.Habit.Hasdown {
+			<div>{ habitAndLog.Habit.Name } | +{ fmt.Sprintf("%d", habitAndLog.HabitLog.Upcount) }| -{ fmt.Sprintf("%d", habitAndLog.HabitLog.Downcount) } </div>
 		} else {
-			<div>{ habit.Name } | + { fmt.Sprintf("%d", habit.UpCount) }</div>
+			<div>{ habitAndLog.Habit.Name } | + { fmt.Sprintf("%d", habitAndLog.HabitLog.Upcount) }</div>
 		}
 		<div class="float-right">
 			<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="w-4 h-4">
 				<path fill-rule="evenodd" d="M11.013 2.513a1.75 1.75 0 0 1 2.475 2.474L6.226 12.25a2.751 2.751 0 0 1-.892.596l-2.047.848a.75.75 0 0 1-.98-.98l.848-2.047a2.75 2.75 0 0 1 .596-.892l7.262-7.261Z" clip-rule="evenodd"></path>
 			</svg>
 		</div>
-		<button class={ "btn btn-primary btn-square", templ.KV("btn-disabled", !habit.HasDown) } hx-post={ fmt.Sprintf("/%v/down", habit.Id) } hx-swap="outerHTML" hx-target={ fmt.Sprintf("#habit-%v", habit.Id) }>
+		<button class={ "btn btn-primary btn-square", templ.KV("btn-disabled", !habitAndLog.Habit.Hasdown) } hx-post={ fmt.Sprintf("/%v/%v/down", habitAndLog.Habit.ID, habitAndLog.HabitLog.ID) } hx-swap="outerHTML" hx-target={ fmt.Sprintf("#habit-%v", habitAndLog.Habit.ID) }>
 			<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
 				<path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14"></path>
 			</svg>
@@ -85,6 +86,8 @@ templ HabitModal() {
 			<label for="habitName">Habit Name:</label>
 			<input type="text" id="habitName" name="habitName"/>
 			<br/>
+			<label for="hasUp">Has Up</label>
+			<input type="checkbox" name="hasUp"/>
 			<label for="hasDown">Has Down</label>
 			<input type="checkbox" name="hasDown"/>
 			<button class="btn" type="submit">Submit</button>
@@ -150,7 +153,7 @@ templ Header() {
 	</div>
 }
 
-templ Page(habits []models.Habit, dailys []models.Daily) {
+templ Page(habits []services.HabitAndLog, dailys []models.Daily) {
 	<html>
 		<head>
 			<script src="/assets/htmx.min.js"></script>

@@ -86,7 +86,7 @@ func (us UserStore) AddUser(username, passwordHash string) error {
 	return nil
 }
 
-func (hs HabitStore) AddHabit(userId int, habitName string, hasDown bool) models.Habit {
+func (hs HabitStore) AddHabit(userId int, habitName string, hasUp, hasDown bool) models.Habit {
 	habit := models.Habit{
 		Name:    habitName,
 		HasDown: hasDown,
@@ -96,13 +96,14 @@ func (hs HabitStore) AddHabit(userId int, habitName string, hasDown bool) models
 		log.Fatal("error starting txn", "err", err)
 	}
 	stmt, err := tx.Prepare(`INSERT INTO habits
-		(userId, name, up, down, hasDown) VALUES(?, ?, ?, ?, ?)
+		(userId, name, hasUp, hasDown) VALUES(?, ?, ?, ?)
+
 		RETURNING *`)
 	if err != nil {
 		log.Fatal("error preparing statement", "err", err)
 	}
 	defer stmt.Close()
-	err = stmt.QueryRow(userId, habitName, 0, 0, hasDown).Scan(&habit.Id, &habit.UserId, &habit.Name, &habit.UpCount, &habit.DownCount, &habit.HasDown)
+	err = stmt.QueryRow(userId, habitName, hasUp, hasDown).Scan(&habit.Id, &habit.UserId, &habit.Name, &habit.HasUp, &habit.HasDown)
 
 	if err != nil {
 		log.Fatal("error querying row", "err", err)
@@ -126,7 +127,7 @@ func (hs HabitStore) GetHabits(userId int) []models.Habit {
 	for rows.Next() {
 		var habit models.Habit
 		// todo: handle error
-		rows.Scan(&habit.Id, &habit.UserId, &habit.Name, &habit.UpCount, &habit.DownCount, &habit.HasDown)
+		rows.Scan(&habit.Id, &habit.UserId, &habit.Name, &habit.HasUp, &habit.HasDown)
 		habits = append(habits, habit)
 	}
 	return habits
@@ -141,14 +142,14 @@ func (hs HabitStore) GetHabit(habitId int) models.Habit {
 	for rows.Next() {
 		var habit models.Habit
 		// todo: handle error
-		rows.Scan(&habit.Id, &habit.UserId, &habit.Name, &habit.UpCount, &habit.DownCount, &habit.HasDown)
+		rows.Scan(&habit.Id, &habit.UserId, &habit.Name, &habit.HasUp, &habit.HasDown)
 		habits = append(habits, habit)
 	}
 	return habits[0]
 }
 
 func (hs HabitStore) UpdateHabit(habit models.Habit) models.Habit {
-	_, err := hs.dbase.Exec("UPDATE habits SET name=?, up=?, down=?, hasDown=? WHERE id = ?", habit.Name, habit.UpCount, habit.DownCount, habit.HasDown, habit.Id)
+	_, err := hs.dbase.Exec("UPDATE habits SET name=?, hasUp=?, hasDown=? WHERE id = ?", habit.Name, habit.HasUp, habit.HasDown, habit.Id)
 	if err != nil {
 		log.Fatal(err)
 	}

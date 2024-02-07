@@ -3,7 +3,7 @@ package handlers
 import (
 	"habitus/components"
 	"habitus/middleware"
-	"habitus/models"
+	"habitus/services"
 	"log/slog"
 	"net/http"
 	"strconv"
@@ -17,10 +17,10 @@ type HabitHandler struct {
 }
 
 type HabitService interface {
-	CountUp(habitId int) models.Habit
-	CountDown(habitId int) models.Habit
-	AddHabit(userId int, habitName string, hasDown bool) models.Habit
-	GetHabits(userId int) []models.Habit
+	CountUp(habitId int) services.HabitAndLog
+	CountDown(habitId int) services.HabitAndLog
+	AddHabit(userId int, habitName string, hasUp, hasDown bool) services.HabitAndLog
+	GetHabits(userId int) []services.HabitAndLog
 }
 
 func NewHabitHandler(log *slog.Logger, habitService HabitService) *HabitHandler {
@@ -42,10 +42,13 @@ func (h *HabitHandler) CountDown(w http.ResponseWriter, r *http.Request) {
 func (h *HabitHandler) Put(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	formHabitName := r.Form.Get("habitName")
+	formHasUp := r.Form.Get("hasUp")
 	formHasDown := r.Form.Get("hasDown")
+
+	hasUp := formHasUp == "on"
 	hasDown := formHasDown == "on"
 	user := middleware.UserFromContext(r.Context())
-	habit := h.HabitService.AddHabit(user.Id, formHabitName, hasDown)
+	habit := h.HabitService.AddHabit(int(user.ID), formHabitName, hasUp, hasDown)
 	components.Habit(habit).Render(r.Context(), w)
 }
 

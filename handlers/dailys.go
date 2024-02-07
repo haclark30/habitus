@@ -36,7 +36,7 @@ func (d *DailyHandler) Put(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	formDailyName := r.Form.Get("dailyName")
 	user := middleware.UserFromContext(r.Context())
-	daily := d.DailyService.AddDaily(user.Id, formDailyName)
+	daily := d.DailyService.AddDaily(int(user.ID), formDailyName)
 	components.Daily(daily).Render(r.Context(), w)
 }
 

@@ -3,7 +3,7 @@ package handlers
 import (
 	"fmt"
 	"habitus/components"
-	"habitus/models"
+	"habitus/db_sqlc"
 	"log/slog"
 	"net/http"
 	"time"
@@ -21,7 +21,7 @@ type UserService interface {
 }
 
 type SessionService interface {
-	GetSession(sessionToken string) (models.User, error)
+	GetSession(sessionToken string) (db_sqlc.User, error)
 	CreateSession(username string) (string, error)
 }
 

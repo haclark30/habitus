@@ -2,7 +2,9 @@ package main
 
 import (
 	"database/sql"
+	_ "embed"
 	"habitus/db"
+	"habitus/db_sqlc"
 	"habitus/handlers"
 	"habitus/middleware"
 	"habitus/models"
@@ -23,6 +25,9 @@ var (
 	dailys []models.Daily
 )
 
+//go:embed schema.sql
+var ddl string
+
 func main() {
 	err := dotenv.Load()
 	if err != nil {
@@ -30,25 +35,24 @@ func main() {
 	}
 	// dbUrl := fmt.Sprintf("%s?authToken=%s", os.Getenv("TURSO_URL"), os.Getenv("TURSO_AUTH_TOKEN"))
 
-	dbUrl := "file:my_db.sqlite"
+	dbUrl := "file:my_db2.sqlite"
 
 	dbase, err := sql.Open("libsql", dbUrl)
 	if err != nil {
 		log.Fatal("error connecting to db", "err", err)
 	}
 
-	habitStore := db.NewHabitStore(dbase)
-	habitService := services.NewHabit(slog.Default(), habitStore)
+	queries := db_sqlc.New(dbase)
+
+	habitService := services.NewHabit(slog.Default(), queries)
 	habitHandler := handlers.NewHabitHandler(slog.Default(), habitService)
 
 	dailyStore := db.NewDailyStore(slog.Default(), dbase)
 	dailyService := services.NewDaily(slog.Default(), dailyStore)
 	dailyHandler := handlers.NewDailyHandler(slog.Default(), dailyService)
 
-	userStore := db.NewUserStore(slog.Default(), dbase)
-	userService := services.NewUserService(slog.Default(), userStore)
-	sessionStore := db.NewSessionStore(slog.Default(), dbase)
-	sessionService := services.NewSessionService(slog.Default(), sessionStore, userStore)
+	userService := services.NewUserService(slog.Default(), queries)
+	sessionService := services.NewSessionService(slog.Default(), queries, queries)
 	userHandler := handlers.NewUserHandler(slog.Default(), userService, sessionService)
 
 	indexHandler := handlers.NewIndexHandler(habitService, dailyService)
@@ -65,8 +69,8 @@ func main() {
 
 		r.Get("/", indexHandler.Get)
 
-		r.Post("/{habitId}/up", habitHandler.CountUp)
-		r.Post("/{habitId}/down", habitHandler.CountDown)
+		r.Post("/{habitId}/{habitLogId}/up", habitHandler.CountUp)
+		r.Post("/{habitId}/{habitLogId}/down", habitHandler.CountDown)
 		r.Put("/habit", habitHandler.Put)
 		r.Get("/habitModal", habitHandler.Modal)
 

@@ -6,6 +6,7 @@ type Habit struct {
 	UserId    int
 	UpCount   int
 	DownCount int
+	HasUp     bool
 	HasDown   bool
 }
 

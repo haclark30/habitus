@@ -2,7 +2,7 @@ package middleware
 
 import (
 	"context"
-	"habitus/models"
+	"habitus/db_sqlc"
 	"net/http"
 )
 
@@ -13,7 +13,7 @@ const (
 )
 
 type SessionService interface {
-	GetSession(sessionToken string) (models.User, error)
+	GetSession(sessionToken string) (db_sqlc.User, error)
 	CreateSession(username string) (string, error)
 }
 
@@ -57,11 +57,11 @@ func (s *SessionManager) Middleware(next http.Handler) http.Handler {
 	})
 }
 
-func UserFromContext(ctx context.Context) *models.User {
+func UserFromContext(ctx context.Context) *db_sqlc.User {
 	user := ctx.Value(userKey)
 	if user == nil {
 		return nil
 	}
-	userVal := user.(models.User)
+	userVal := user.(db_sqlc.User)
 	return &userVal
 }

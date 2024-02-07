@@ -21,5 +21,7 @@ func (i *IndexHandler) Get(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
-	components.Page(i.habitService.GetHabits(user.Id), i.dailyService.GetDailys(user.Id)).Render(r.Context(), w)
+
+	habits := i.habitService.GetHabits(int(user.ID))
+	components.Page(habits, i.dailyService.GetDailys(int(user.ID))).Render(r.Context(), w)
 }
