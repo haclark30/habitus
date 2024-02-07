@@ -49,13 +49,13 @@ RETURNING *;
 -- name: HabitLogUp :one
 UPDATE habitLog
 SET upCount = upCount + 1
-WHERE habitId = ? AND dateTime = ?
+WHERE ID = ?
 RETURNING *;
 
 -- name: HabitLogDown :one
 UPDATE habitLog
 SET downCount = downCount + 1
-WHERE habitId = ? AND dateTime = ?
+WHERE ID = ? 
 RETURNING *;
 
 -- name: GetHabitLog :one

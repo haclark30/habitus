@@ -24,11 +24,8 @@ func NewHabit(log *slog.Logger, queries *db_sqlc.Queries) Habit {
 	}
 }
 
-func (hs Habit) CountUp(habitId int) HabitAndLog {
-	habLog, err := hs.Habits.HabitLogUp(context.TODO(), db_sqlc.HabitLogUpParams{
-		Habitid:  int64(habitId),
-		Datetime: 0,
-	})
+func (hs Habit) CountUp(habitId int, habitLogId int) HabitAndLog {
+	habLog, err := hs.Habits.HabitLogUp(context.TODO(), int64(habitLogId))
 	if err != nil {
 		hs.Log.Error("error counting up", "err", err)
 	}
@@ -39,11 +36,8 @@ func (hs Habit) CountUp(habitId int) HabitAndLog {
 	return HabitAndLog{Habit: habit, HabitLog: habLog}
 }
 
-func (hs Habit) CountDown(habitId int) HabitAndLog {
-	habLog, _ := hs.Habits.HabitLogDown(context.TODO(), db_sqlc.HabitLogDownParams{
-		Habitid:  int64(habitId),
-		Datetime: 0,
-	})
+func (hs Habit) CountDown(habitId int, habitLogId int) HabitAndLog {
+	habLog, _ := hs.Habits.HabitLogDown(context.TODO(), int64(habitLogId))
 
 	habit, _ := hs.Habits.GetHabit(context.TODO(), int64(habitId))
 
@@ -72,7 +66,7 @@ func (hs Habit) AddHabit(userId int, habitName string, hasUp, hasDown bool) Habi
 	return HabitAndLog{Habit: habit, HabitLog: habLog}
 }
 
-func (hs Habit) GetHabits(userId int) []HabitAndLog {
+func (hs Habit) GetHabits(userId int, datetime int64) []HabitAndLog {
 	var habsAndLogs []HabitAndLog
 	habit, err := hs.Habits.GetHabits(context.TODO(), int64(userId))
 	if err != nil {
@@ -81,13 +75,13 @@ func (hs Habit) GetHabits(userId int) []HabitAndLog {
 	for _, hab := range habit {
 		habLog, err := hs.Habits.GetHabitLog(context.TODO(), db_sqlc.GetHabitLogParams{
 			Habitid:  hab.ID,
-			Datetime: 0,
+			Datetime: datetime,
 		})
 		if err != nil {
 			if err == sql.ErrNoRows {
 				habLog, _ = hs.Habits.AddHabitLog(context.TODO(), db_sqlc.AddHabitLogParams{
 					Habitid:  hab.ID,
-					Datetime: 0,
+					Datetime: datetime,
 				})
 			}
 		}

@@ -4,6 +4,7 @@ import (
 	"habitus/components"
 	"habitus/middleware"
 	"net/http"
+	"time"
 )
 
 type IndexHandler struct {
@@ -22,6 +23,10 @@ func (i *IndexHandler) Get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	habits := i.habitService.GetHabits(int(user.ID))
+	loc, _ := time.LoadLocation("America/Chicago")
+	year, month, day := time.Now().In(loc).Date()
+	t := time.Date(year, month, day, 0, 0, 0, 0, loc)
+
+	habits := i.habitService.GetHabits(int(user.ID), t.Unix())
 	components.Page(habits, i.dailyService.GetDailys(int(user.ID))).Render(r.Context(), w)
 }

@@ -258,17 +258,12 @@ func (q *Queries) GetUser(ctx context.Context, username string) (User, error) {
 const habitLogDown = `-- name: HabitLogDown :one
 UPDATE habitLog
 SET downCount = downCount + 1
-WHERE habitId = ? AND dateTime = ?
+WHERE ID = ? 
 RETURNING id, habitid, upcount, downcount, datetime
 `
 
-type HabitLogDownParams struct {
-	Habitid  int64
-	Datetime int64
-}
-
-func (q *Queries) HabitLogDown(ctx context.Context, arg HabitLogDownParams) (HabitLog, error) {
-	row := q.db.QueryRowContext(ctx, habitLogDown, arg.Habitid, arg.Datetime)
+func (q *Queries) HabitLogDown(ctx context.Context, id int64) (HabitLog, error) {
+	row := q.db.QueryRowContext(ctx, habitLogDown, id)
 	var i HabitLog
 	err := row.Scan(
 		&i.ID,
@@ -283,17 +278,12 @@ func (q *Queries) HabitLogDown(ctx context.Context, arg HabitLogDownParams) (Hab
 const habitLogUp = `-- name: HabitLogUp :one
 UPDATE habitLog
 SET upCount = upCount + 1
-WHERE habitId = ? AND dateTime = ?
+WHERE ID = ?
 RETURNING id, habitid, upcount, downcount, datetime
 `
 
-type HabitLogUpParams struct {
-	Habitid  int64
-	Datetime int64
-}
-
-func (q *Queries) HabitLogUp(ctx context.Context, arg HabitLogUpParams) (HabitLog, error) {
-	row := q.db.QueryRowContext(ctx, habitLogUp, arg.Habitid, arg.Datetime)
+func (q *Queries) HabitLogUp(ctx context.Context, id int64) (HabitLog, error) {
+	row := q.db.QueryRowContext(ctx, habitLogUp, id)
 	var i HabitLog
 	err := row.Scan(
 		&i.ID,
