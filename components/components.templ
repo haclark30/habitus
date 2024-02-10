@@ -1,41 +1,43 @@
 package components
 
 import "fmt"
-import "habitus/models"
-import "habitus/services"
+import "habitus/db_sqlc"
 
-templ HabitList(habits []services.HabitAndLog) {
+templ HabitList(habits []db_sqlc.GetHabitsAndLogsRow) {
 	<div id="habit-list">
 		<div class="max-w-sm">
 			<button class="btn" hx-get="/habitModal" hx-target="#htmx_modal" hx-trigger="click" hx-on:click="habit_modal.showModal()">Add Habit</button>
 			<dialog id="habit_modal" class="modal">
 				<div class="modal-box" id="htmx_modal"></div>
+				<form method="dialog" class="modal-backdrop">
+					<button>close</button>
+				</form>
 			</dialog>
 			for _, h := range habits {
-				@Habit(h)
+				@Habit(h.Habit, h.HabitLog)
 			}
 		</div>
 	</div>
 }
 
-templ Habit(habitAndLog services.HabitAndLog) {
-	<div id={ fmt.Sprintf("habit-%v", habitAndLog.Habit.ID) } class="flex">
-		<button class={ "btn btn-primary btn-square", templ.KV("btn-disabled", !habitAndLog.Habit.Hasup) } hx-post={ fmt.Sprintf("/%v/%v/up", habitAndLog.Habit.ID, habitAndLog.HabitLog.ID) } hx-swap="outerHTML" hx-target={ fmt.Sprintf("#habit-%v", habitAndLog.Habit.ID) }>
+templ Habit(habit db_sqlc.Habit, habitLog db_sqlc.HabitLog) {
+	<div id={ fmt.Sprintf("habit-%v", habit.ID) } class="flex">
+		<button class={ "btn btn-primary btn-square", templ.KV("btn-disabled", !habit.Hasup) } hx-post={ fmt.Sprintf("/%v/%v/up", habit.ID, habitLog.ID) } hx-swap="outerHTML" hx-target={ fmt.Sprintf("#habit-%v", habit.ID) }>
 			<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
 				<path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"></path>
 			</svg>
 		</button>
-		if habitAndLog.Habit.Hasdown {
-			<div>{ habitAndLog.Habit.Name } | +{ fmt.Sprintf("%d", habitAndLog.HabitLog.Upcount) }| -{ fmt.Sprintf("%d", habitAndLog.HabitLog.Downcount) } </div>
+		if habit.Hasdown {
+			<div>{ habit.Name } | +{ fmt.Sprintf("%d", habitLog.Upcount) }| -{ fmt.Sprintf("%d", habitLog.Downcount) } </div>
 		} else {
-			<div>{ habitAndLog.Habit.Name } | + { fmt.Sprintf("%d", habitAndLog.HabitLog.Upcount) }</div>
+			<div>{ habit.Name } | + { fmt.Sprintf("%d", habitLog.Upcount) }</div>
 		}
-		<div class="float-right">
+		<div class="float-right" hx-get={ fmt.Sprintf("/habit/%v/edit", habit.ID) } hx-target="#htmx_modal" hx-trigger="click" hx-on:click="habit_modal.showModal()">
 			<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="w-4 h-4">
 				<path fill-rule="evenodd" d="M11.013 2.513a1.75 1.75 0 0 1 2.475 2.474L6.226 12.25a2.751 2.751 0 0 1-.892.596l-2.047.848a.75.75 0 0 1-.98-.98l.848-2.047a2.75 2.75 0 0 1 .596-.892l7.262-7.261Z" clip-rule="evenodd"></path>
 			</svg>
 		</div>
-		<button class={ "btn btn-primary btn-square", templ.KV("btn-disabled", !habitAndLog.Habit.Hasdown) } hx-post={ fmt.Sprintf("/%v/%v/down", habitAndLog.Habit.ID, habitAndLog.HabitLog.ID) } hx-swap="outerHTML" hx-target={ fmt.Sprintf("#habit-%v", habitAndLog.Habit.ID) }>
+		<button class={ "btn btn-primary btn-square", templ.KV("btn-disabled", !habit.Hasdown) } hx-post={ fmt.Sprintf("/%v/%v/down", habit.ID, habitLog.ID) } hx-swap="outerHTML" hx-target={ fmt.Sprintf("#habit-%v", habit.ID) }>
 			<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
 				<path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14"></path>
 			</svg>
@@ -43,26 +45,28 @@ templ Habit(habitAndLog services.HabitAndLog) {
 	</div>
 }
 
-templ DailysList(dailys []models.Daily) {
+templ DailysList(dailys []db_sqlc.GetDailysAndLogsRow) {
 	<div id="daily-list">
 		<button class="btn" hx-get="/dailyModal" hx-target="#htmx_modal_daily" hx-trigger="click" hx-on:click="daily_modal.showModal()">Add Daily</button>
 		<dialog id="daily_modal" class="modal">
 			<div class="modal-box" id="htmx_modal_daily"></div>
+			<form method="dialog" class="modal-backdrop">
+				<button>close</button>
+			</form>
 		</dialog>
 		for _, d := range dailys {
-			@Daily(d)
+			@Daily(d.Daily, d.DailyLog)
 		}
 	</div>
 }
 
-templ Daily(daily models.Daily) {
-	<div>
-		if daily.Done {
-			<input hx-post={ fmt.Sprintf("/%v/done", daily.Id) } type="checkbox" id={ fmt.Sprintf("daily-%v", daily.Id) } checked/>
+templ Daily(daily db_sqlc.Daily, dailyLog db_sqlc.DailyLog) {
+	<div id={ fmt.Sprintf("daily-%v", daily.ID) } hx-post={ fmt.Sprintf("/%v/%v/done", daily.ID, dailyLog.ID) } hx-target={ fmt.Sprintf("#daily-%v", daily.ID) } hx-swap="outerHTML">
+		if dailyLog.Done {
+			<s>{ daily.Name }</s>
 		} else {
-			<input hx-post={ fmt.Sprintf("/%v/done", daily.Id) } type="checkbox" id={ fmt.Sprintf("daily-%v", daily.Id) }/>
+			<p>{ daily.Name }</p>
 		}
-		<label for={ fmt.Sprintf("daily-%v", daily.Id) }>{ daily.Name } </label>
 	</div>
 }
 
@@ -78,40 +82,26 @@ templ modal() {
 
 templ HabitModal() {
 	<h1>Add Habit</h1>
-	<form method="dialog">
-		<button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</button>
+	<form hx-put="/habit" hx-target="#habit-list" hx-swap="beforeend" hx-on:submit="habit_modal.close()">
+		<label for="habitName">Habit Name:</label>
+		<input type="text" id="habitName" name="habitName"/>
+		<br/>
+		<label for="hasUp">Has Up</label>
+		<input type="checkbox" name="hasUp"/>
+		<label for="hasDown">Has Down</label>
+		<input type="checkbox" name="hasDown"/>
+		<button class="btn" type="submit">Submit</button>
 	</form>
-	<div class="modal-action">
-		<form hx-put="/habit" hx-target="#habit-list" hx-swap="beforeend" hx-on:submit="habit_modal.close()">
-			<label for="habitName">Habit Name:</label>
-			<input type="text" id="habitName" name="habitName"/>
-			<br/>
-			<label for="hasUp">Has Up</label>
-			<input type="checkbox" name="hasUp"/>
-			<label for="hasDown">Has Down</label>
-			<input type="checkbox" name="hasDown"/>
-			<button class="btn" type="submit">Submit</button>
-		</form>
-	</div>
-	<br/>
-	<br/>
 }
 
 templ DailyModal() {
 	<h1>Add Daily</h1>
-	<form method="dialog">
-		<button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</button>
+	<form hx-put="/daily" hx-target="#daily-list" hx-swap="beforeend" hx-on:submit="daily_modal.close()">
+		<label for="dailyName">Daily Name:</label>
+		<input type="text" id="dailyName" name="dailyName"/>
+		<br/>
+		<button class="btn" type="submit">Submit</button>
 	</form>
-	<div class="modal-action">
-		<form hx-put="/daily" hx-target="#daily-list" hx-swap="beforeend" hx-on:submit="daily_modal.close()">
-			<label for="dailyName">Daily Name:</label>
-			<input type="text" id="dailyName" name="dailyName"/>
-			<br/>
-			<button class="btn" type="submit">Submit</button>
-		</form>
-	</div>
-	<br/>
-	<br/>
 }
 
 templ Header() {
@@ -153,7 +143,7 @@ templ Header() {
 	</div>
 }
 
-templ Page(habits []services.HabitAndLog, dailys []models.Daily) {
+templ Page(habits []db_sqlc.GetHabitsAndLogsRow, dailys []db_sqlc.GetDailysAndLogsRow) {
 	<html>
 		<head>
 			<script src="/assets/htmx.min.js"></script>

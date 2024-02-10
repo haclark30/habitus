@@ -7,12 +7,14 @@ import (
 	"log/slog"
 	"net/http"
 	"time"
+
+	"github.com/google/uuid"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type UserHandler struct {
-	Log            *slog.Logger
-	UserService    UserService
-	SessionService SessionService
+	Log     *slog.Logger
+	queries *db_sqlc.Queries
 }
 
 type UserService interface {
@@ -25,8 +27,8 @@ type SessionService interface {
 	CreateSession(username string) (string, error)
 }
 
-func NewUserHandler(log *slog.Logger, userService UserService, sessionService SessionService) *UserHandler {
-	return &UserHandler{Log: log, UserService: userService, SessionService: sessionService}
+func NewUserHandler(log *slog.Logger, queries *db_sqlc.Queries) *UserHandler {
+	return &UserHandler{Log: log, queries: queries}
 }
 
 func (u *UserHandler) GetLogin(w http.ResponseWriter, r *http.Request) {
@@ -39,18 +41,24 @@ func (u *UserHandler) PostLogin(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("error parsing form", err)
 	}
 	user, pass := r.Form.Get("userName"), r.Form.Get("pass")
-	authOk, err := u.UserService.AuthUser(user, pass)
+
+	dbUser, err := u.queries.GetUser(r.Context(), user)
 	if err != nil {
 		u.Log.Error("error trying to auth", "err", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	if !authOk {
+	err = bcrypt.CompareHashAndPassword([]byte(dbUser.Passwordhash), []byte(pass))
+	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
 
-	sessionToken, err := u.SessionService.CreateSession(user)
+	sessionToken := uuid.NewString()
+	_, err = u.queries.AddSession(r.Context(), db_sqlc.AddSessionParams{
+		Userid: dbUser.ID,
+		Token:  sessionToken,
+	})
 	if err != nil {
 		u.Log.Error("error writing session", "err", err)
 		w.WriteHeader(http.StatusInternalServerError)
@@ -85,10 +93,19 @@ func (u *UserHandler) PostSignup(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		u.Log.Error("user or password are blank")
 	}
-	err = u.UserService.CreateUser(user, pass)
+	passwordHash, err := bcrypt.GenerateFromPassword([]byte(pass), 8)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		u.Log.Error("error creating user", "err", err)
+		return
+	}
+
+	if err = u.queries.AddUser(r.Context(), db_sqlc.AddUserParams{
+		Username: user, Passwordhash: string(passwordHash),
+	}); err != nil {
+		u.Log.Error("error creating user", "err", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 	w.Header().Set("hx-redirect", "/")
 }

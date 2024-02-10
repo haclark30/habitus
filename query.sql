@@ -66,4 +66,42 @@ LIMIT 1;
 -- name: GetHabitsAndLogs :many
 SELECT sqlc.embed(habits), sqlc.embed(hl) FROM habits 
 JOIN habitLog hl ON hl.habitId = habits.ID
-WHERE habits.userId = ?;
+WHERE habits.userId = ? and hl.dateTime = ?;
+
+-- name: AddDaily :one
+INSERT INTO dailys (
+  userId, name 
+) VALUES (
+  ?, ?
+) RETURNING *;
+
+-- name: AddDailyLog :one
+INSERT INTO dailyLog (
+  dailyId, done, dateTime
+) VALUES (
+  ?, false, ?
+) RETURNING *;
+
+-- name: DailyLogDone :one
+UPDATE dailyLog
+SET done = NOT done
+WHERE ID = ?
+RETURNING *;
+
+-- name: GetDaily :one
+SELECT * FROM dailys
+WHERE ID = ?;
+
+-- name: GetDailys :many
+SELECT * FROM dailys
+WHERE userId = ?;
+
+-- name: GetDailyLog :one
+SELECT * from dailyLog
+WHERE dailyId = ? and dateTime = ?
+LIMIT 1;
+
+-- name: GetDailysAndLogs :many
+SELECT sqlc.embed(d), sqlc.embed(dl) FROM dailys d
+JOIN dailyLog dl ON dl.dailyId = d.ID
+WHERE d.userId = ? and dl.dateTime = ?;

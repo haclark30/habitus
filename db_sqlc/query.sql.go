@@ -9,6 +9,51 @@ import (
 	"context"
 )
 
+const addDaily = `-- name: AddDaily :one
+INSERT INTO dailys (
+  userId, name 
+) VALUES (
+  ?, ?
+) RETURNING id, userid, name
+`
+
+type AddDailyParams struct {
+	Userid int64
+	Name   string
+}
+
+func (q *Queries) AddDaily(ctx context.Context, arg AddDailyParams) (Daily, error) {
+	row := q.db.QueryRowContext(ctx, addDaily, arg.Userid, arg.Name)
+	var i Daily
+	err := row.Scan(&i.ID, &i.Userid, &i.Name)
+	return i, err
+}
+
+const addDailyLog = `-- name: AddDailyLog :one
+INSERT INTO dailyLog (
+  dailyId, done, dateTime
+) VALUES (
+  ?, false, ?
+) RETURNING id, dailyid, done, datetime
+`
+
+type AddDailyLogParams struct {
+	Dailyid  int64
+	Datetime int64
+}
+
+func (q *Queries) AddDailyLog(ctx context.Context, arg AddDailyLogParams) (DailyLog, error) {
+	row := q.db.QueryRowContext(ctx, addDailyLog, arg.Dailyid, arg.Datetime)
+	var i DailyLog
+	err := row.Scan(
+		&i.ID,
+		&i.Dailyid,
+		&i.Done,
+		&i.Datetime,
+	)
+	return i, err
+}
+
 const addHabit = `-- name: AddHabit :one
 INSERT INTO habits (
   userId, name, hasUp, hasDown
@@ -109,6 +154,135 @@ func (q *Queries) AddUser(ctx context.Context, arg AddUserParams) error {
 	return err
 }
 
+const dailyLogDone = `-- name: DailyLogDone :one
+UPDATE dailyLog
+SET done = NOT done
+WHERE ID = ?
+RETURNING id, dailyid, done, datetime
+`
+
+func (q *Queries) DailyLogDone(ctx context.Context, id int64) (DailyLog, error) {
+	row := q.db.QueryRowContext(ctx, dailyLogDone, id)
+	var i DailyLog
+	err := row.Scan(
+		&i.ID,
+		&i.Dailyid,
+		&i.Done,
+		&i.Datetime,
+	)
+	return i, err
+}
+
+const getDaily = `-- name: GetDaily :one
+SELECT id, userid, name FROM dailys
+WHERE ID = ?
+`
+
+func (q *Queries) GetDaily(ctx context.Context, id int64) (Daily, error) {
+	row := q.db.QueryRowContext(ctx, getDaily, id)
+	var i Daily
+	err := row.Scan(&i.ID, &i.Userid, &i.Name)
+	return i, err
+}
+
+const getDailyLog = `-- name: GetDailyLog :one
+SELECT id, dailyid, done, datetime from dailyLog
+WHERE dailyId = ? and dateTime = ?
+LIMIT 1
+`
+
+type GetDailyLogParams struct {
+	Dailyid  int64
+	Datetime int64
+}
+
+func (q *Queries) GetDailyLog(ctx context.Context, arg GetDailyLogParams) (DailyLog, error) {
+	row := q.db.QueryRowContext(ctx, getDailyLog, arg.Dailyid, arg.Datetime)
+	var i DailyLog
+	err := row.Scan(
+		&i.ID,
+		&i.Dailyid,
+		&i.Done,
+		&i.Datetime,
+	)
+	return i, err
+}
+
+const getDailys = `-- name: GetDailys :many
+SELECT id, userid, name FROM dailys
+WHERE userId = ?
+`
+
+func (q *Queries) GetDailys(ctx context.Context, userid int64) ([]Daily, error) {
+	rows, err := q.db.QueryContext(ctx, getDailys, userid)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Daily
+	for rows.Next() {
+		var i Daily
+		if err := rows.Scan(&i.ID, &i.Userid, &i.Name); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getDailysAndLogs = `-- name: GetDailysAndLogs :many
+SELECT d.id, d.userid, d.name, dl.id, dl.dailyid, dl.done, dl.datetime FROM dailys d
+JOIN dailyLog dl ON dl.dailyId = d.ID
+WHERE d.userId = ? and dl.dateTime = ?
+`
+
+type GetDailysAndLogsParams struct {
+	Userid   int64
+	Datetime int64
+}
+
+type GetDailysAndLogsRow struct {
+	Daily    Daily
+	DailyLog DailyLog
+}
+
+func (q *Queries) GetDailysAndLogs(ctx context.Context, arg GetDailysAndLogsParams) ([]GetDailysAndLogsRow, error) {
+	rows, err := q.db.QueryContext(ctx, getDailysAndLogs, arg.Userid, arg.Datetime)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetDailysAndLogsRow
+	for rows.Next() {
+		var i GetDailysAndLogsRow
+		if err := rows.Scan(
+			&i.Daily.ID,
+			&i.Daily.Userid,
+			&i.Daily.Name,
+			&i.DailyLog.ID,
+			&i.DailyLog.Dailyid,
+			&i.DailyLog.Done,
+			&i.DailyLog.Datetime,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getHabit = `-- name: GetHabit :one
 SELECT id, userid, name, hasup, hasdown FROM habits
 WHERE id = ? LIMIT 1
@@ -188,16 +362,21 @@ func (q *Queries) GetHabits(ctx context.Context, userid int64) ([]Habit, error) 
 const getHabitsAndLogs = `-- name: GetHabitsAndLogs :many
 SELECT habits.id, habits.userid, habits.name, habits.hasup, habits.hasdown, hl.id, hl.habitid, hl.upcount, hl.downcount, hl.datetime FROM habits 
 JOIN habitLog hl ON hl.habitId = habits.ID
-WHERE habits.userId = ?
+WHERE habits.userId = ? and hl.dateTime = ?
 `
+
+type GetHabitsAndLogsParams struct {
+	Userid   int64
+	Datetime int64
+}
 
 type GetHabitsAndLogsRow struct {
 	Habit    Habit
 	HabitLog HabitLog
 }
 
-func (q *Queries) GetHabitsAndLogs(ctx context.Context, userid int64) ([]GetHabitsAndLogsRow, error) {
-	rows, err := q.db.QueryContext(ctx, getHabitsAndLogs, userid)
+func (q *Queries) GetHabitsAndLogs(ctx context.Context, arg GetHabitsAndLogsParams) ([]GetHabitsAndLogsRow, error) {
+	rows, err := q.db.QueryContext(ctx, getHabitsAndLogs, arg.Userid, arg.Datetime)
 	if err != nil {
 		return nil, err
 	}

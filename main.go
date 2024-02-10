@@ -3,12 +3,10 @@ package main
 import (
 	"database/sql"
 	_ "embed"
-	"habitus/db"
 	"habitus/db_sqlc"
 	"habitus/handlers"
 	"habitus/middleware"
 	"habitus/models"
-	"habitus/services"
 	"log"
 	"log/slog"
 	"net/http"
@@ -44,20 +42,11 @@ func main() {
 
 	queries := db_sqlc.New(dbase)
 
-	habitService := services.NewHabit(slog.Default(), queries)
-	habitHandler := handlers.NewHabitHandler(slog.Default(), habitService)
-
-	dailyStore := db.NewDailyStore(slog.Default(), dbase)
-	dailyService := services.NewDaily(slog.Default(), dailyStore)
-	dailyHandler := handlers.NewDailyHandler(slog.Default(), dailyService)
-
-	userService := services.NewUserService(slog.Default(), queries)
-	sessionService := services.NewSessionService(slog.Default(), queries, queries)
-	userHandler := handlers.NewUserHandler(slog.Default(), userService, sessionService)
-
-	indexHandler := handlers.NewIndexHandler(habitService, dailyService)
-
-	sessionManager := middleware.NewSessionManager(sessionService)
+	habitHandler := handlers.NewHabitHandler(slog.Default(), queries)
+	dailyHandler := handlers.NewDailyHandler(slog.Default(), queries)
+	userHandler := handlers.NewUserHandler(slog.Default(), queries)
+	indexHandler := handlers.NewIndexHandler(slog.Default(), queries)
+	sessionManager := middleware.NewSessionManager(slog.Default(), queries)
 
 	router := chi.NewRouter()
 	fs := http.StripPrefix("/assets", http.FileServer(http.Dir("assets")))
@@ -73,8 +62,9 @@ func main() {
 		r.Post("/{habitId}/{habitLogId}/down", habitHandler.CountDown)
 		r.Put("/habit", habitHandler.Put)
 		r.Get("/habitModal", habitHandler.Modal)
+		r.Get("/habit/{habitId}/edit", habitHandler.Edit)
 
-		r.Post("/{dailyId}/done", dailyHandler.CompleteDaily)
+		r.Post("/{dailyId}/{dailyLogId}/done", dailyHandler.CompleteDaily)
 		r.Put("/daily", dailyHandler.Put)
 		r.Get("/dailyModal", dailyHandler.Modal)
 	})

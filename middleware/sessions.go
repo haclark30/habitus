@@ -3,6 +3,7 @@ package middleware
 import (
 	"context"
 	"habitus/db_sqlc"
+	"log/slog"
 	"net/http"
 )
 
@@ -18,12 +19,14 @@ type SessionService interface {
 }
 
 type SessionManager struct {
-	sessionService SessionService
+	Log     *slog.Logger
+	queries *db_sqlc.Queries
 }
 
-func NewSessionManager(sessionService SessionService) *SessionManager {
+func NewSessionManager(log *slog.Logger, queries *db_sqlc.Queries) *SessionManager {
 	return &SessionManager{
-		sessionService: sessionService,
+		Log:     log,
+		queries: queries,
 	}
 }
 
@@ -31,6 +34,7 @@ func (s *SessionManager) Middleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		c, err := r.Cookie("session_token")
 		if err != nil {
+			s.Log.Error("no session cookie", "err", err)
 			if r.Header.Get("hx-request") == "true" {
 				w.Header().Set("hx-redirect", "/login")
 				w.WriteHeader(http.StatusUnauthorized)
@@ -41,8 +45,9 @@ func (s *SessionManager) Middleware(next http.Handler) http.Handler {
 		}
 
 		sessionToken := c.Value
-		user, err := s.sessionService.GetSession(sessionToken)
+		user, err := s.queries.GetSession(r.Context(), sessionToken)
 		if err != nil {
+			s.Log.Error("error getting session from db", "err", err)
 			if r.Header.Get("hx-request") == "true" {
 				w.Header().Set("hx-redirect", "/login")
 				w.WriteHeader(http.StatusUnauthorized)
