@@ -105,3 +105,30 @@ LIMIT 1;
 SELECT sqlc.embed(d), sqlc.embed(dl) FROM dailys d
 JOIN dailyLog dl ON dl.dailyId = d.ID
 WHERE d.userId = ? and dl.dateTime = ?;
+
+-- name: UpdateHabit :one
+UPDATE habits 
+SET 
+  name = ?,
+  hasUp = ?,
+  hasDown = ?
+WHERE
+  id = ?
+RETURNING *;
+
+-- name: UpdateHabitLog :one
+UPDATE habitLog
+SET 
+  upCount = ?,
+  downCount = ?
+WHERE
+  id = ?
+RETURNING *;
+
+-- name: DeleteHabitLogs :exec
+DELETE FROM habitLog
+WHERE habitId = ?;
+
+-- name: DeleteHabit :exec
+DELETE FROM habits
+WHERE ID = ?;

@@ -68,6 +68,11 @@ templ Daily(daily db_sqlc.Daily, dailyLog db_sqlc.DailyLog) {
 			<p>{ daily.Name }</p>
 		}
 	</div>
+	<div class="float-right" hx-get={ fmt.Sprintf("/daily/%v/edit", daily.ID) } hx-target="#htmx_modal_daily" hx-trigger="click" hx-on:click="daily_modal.showModal()">
+		<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="w-4 h-4">
+			<path fill-rule="evenodd" d="M11.013 2.513a1.75 1.75 0 0 1 2.475 2.474L6.226 12.25a2.751 2.751 0 0 1-.892.596l-2.047.848a.75.75 0 0 1-.98-.98l.848-2.047a2.75 2.75 0 0 1 .596-.892l7.262-7.261Z" clip-rule="evenodd"></path>
+		</svg>
+	</div>
 }
 
 templ modal() {
@@ -101,6 +106,36 @@ templ DailyModal() {
 		<input type="text" id="dailyName" name="dailyName"/>
 		<br/>
 		<button class="btn" type="submit">Submit</button>
+	</form>
+}
+
+templ EditHabit(habit db_sqlc.Habit, habitLog db_sqlc.HabitLog) {
+	<h1>Edit Habit</h1>
+	<form hx-put={ fmt.Sprintf("/habit/%v/%v", habit.ID, habitLog.ID) } hx-target={ fmt.Sprintf("#habit-%v", habit.ID) } hx-on:submit="habit_modal.close()">
+		<label for="habitName">Habit Name:</label>
+		<input type="text" id="habitName" name="habitName" value={ habit.Name }/>
+		<label for="habitUp">Has Up</label>
+		<input type="checkbox" id="habitUp" name="hasUp" checked?={ habit.Hasup }/>
+		<label for="habitDown">Has Down</label>
+		<input type="checkbox" id="habitDown" name="hasDown" checked?={ habit.Hasdown }/>
+		<input type="number" min="0" value={ fmt.Sprint(habitLog.Upcount) } name="upCount"/>
+		<input type="number" min="0" value={ fmt.Sprint(habitLog.Downcount) } name="downCount"/>
+		<button class="btn btn-primary" type="submit">Update</button>
+	</form>
+	<form hx-delete={ fmt.Sprintf("/habit/%v", habit.ID) } hx-target={ fmt.Sprintf("#habit-%v", habit.ID) } hx-on:submit="habit_modal.close()" hx-confirm="Are you sure?">
+		<button class="btn btn-error" type="submit">Delete</button>
+	</form>
+}
+
+templ EditDaily(daily db_sqlc.Daily, dailyLog db_sqlc.DailyLog) {
+	<h1>Edit Daily</h1>
+	<form hx-put={ fmt.Sprintf("/daily/%v/%v", daily.ID, dailyLog.ID) } hx-target={ fmt.Sprintf("#daily-%v", daily.ID) } hx-on:submit="daily_modal.close()">
+		<label for="dailyName">Daily Name:</label>
+		<input type="text" id="dailyName" name="dailyName" value={ daily.Name }/>
+		<button class="btn btn-primary" type="submit">Update</button>
+	</form>
+	<form hx-delete={ fmt.Sprintf("/daily/%v", daily.ID) } hx-target={ fmt.Sprintf("#daily-%v", daily.ID) } hx-on:submit="daily_modal.close()" hx-confirm="Are you sure?">
+		<button class="btn btn-error" type="submit">Delete</button>
 	</form>
 }
 

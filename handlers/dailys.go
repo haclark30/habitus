@@ -63,6 +63,22 @@ func (d *DailyHandler) Put(w http.ResponseWriter, r *http.Request) {
 	components.Daily(daily, dailyLog).Render(r.Context(), w)
 }
 
+func (d *DailyHandler) Edit(w http.ResponseWriter, r *http.Request) {
+	dailyId, _ := strconv.Atoi(chi.URLParam(r, "dailyId"))
+
+	daily, _ := d.queries.GetDaily(r.Context(), int64(dailyId))
+	loc, _ := time.LoadLocation("America/Chicago")
+	year, month, day := time.Now().In(loc).Date()
+	t := time.Date(year, month, day, 0, 0, 0, 0, loc)
+
+	dailyLog, _ := d.queries.GetDailyLog(r.Context(), db_sqlc.GetDailyLogParams{
+		Dailyid:  daily.ID,
+		Datetime: t.Unix(),
+	})
+
+	components.EditDaily(daily, dailyLog).Render(r.Context(), w)
+}
+
 func (d *DailyHandler) Modal(w http.ResponseWriter, r *http.Request) {
 	components.DailyModal().Render(r.Context(), w)
 }

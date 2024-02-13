@@ -173,6 +173,26 @@ func (q *Queries) DailyLogDone(ctx context.Context, id int64) (DailyLog, error) 
 	return i, err
 }
 
+const deleteHabit = `-- name: DeleteHabit :exec
+DELETE FROM habits
+WHERE ID = ?
+`
+
+func (q *Queries) DeleteHabit(ctx context.Context, id int64) error {
+	_, err := q.db.ExecContext(ctx, deleteHabit, id)
+	return err
+}
+
+const deleteHabitLogs = `-- name: DeleteHabitLogs :exec
+DELETE FROM habitLog
+WHERE habitId = ?
+`
+
+func (q *Queries) DeleteHabitLogs(ctx context.Context, habitid int64) error {
+	_, err := q.db.ExecContext(ctx, deleteHabitLogs, habitid)
+	return err
+}
+
 const getDaily = `-- name: GetDaily :one
 SELECT id, userid, name FROM dailys
 WHERE ID = ?
@@ -463,6 +483,71 @@ RETURNING id, habitid, upcount, downcount, datetime
 
 func (q *Queries) HabitLogUp(ctx context.Context, id int64) (HabitLog, error) {
 	row := q.db.QueryRowContext(ctx, habitLogUp, id)
+	var i HabitLog
+	err := row.Scan(
+		&i.ID,
+		&i.Habitid,
+		&i.Upcount,
+		&i.Downcount,
+		&i.Datetime,
+	)
+	return i, err
+}
+
+const updateHabit = `-- name: UpdateHabit :one
+UPDATE habits 
+SET 
+  name = ?,
+  hasUp = ?,
+  hasDown = ?
+WHERE
+  id = ?
+RETURNING id, userid, name, hasup, hasdown
+`
+
+type UpdateHabitParams struct {
+	Name    string
+	Hasup   bool
+	Hasdown bool
+	ID      int64
+}
+
+func (q *Queries) UpdateHabit(ctx context.Context, arg UpdateHabitParams) (Habit, error) {
+	row := q.db.QueryRowContext(ctx, updateHabit,
+		arg.Name,
+		arg.Hasup,
+		arg.Hasdown,
+		arg.ID,
+	)
+	var i Habit
+	err := row.Scan(
+		&i.ID,
+		&i.Userid,
+		&i.Name,
+		&i.Hasup,
+		&i.Hasdown,
+	)
+	return i, err
+}
+
+const updateHabitLog = `-- name: UpdateHabitLog :one
+UPDATE habitLog
+SET 
+  upCount = ?,
+  downCount = ?
+WHERE
+  id = ?
+RETURNING id, habitid, upcount, downcount, datetime
+`
+
+type UpdateHabitLogParams struct {
+	Upcount   int64
+	Downcount int64
+	ID        int64
+}
+
+func (q *Queries) UpdateHabitLog(ctx context.Context, arg UpdateHabitLogParams) (HabitLog, error) {
+	row := q.db.QueryRowContext(ctx, updateHabitLog, arg.Upcount, arg.Downcount, arg.ID)
 	var i HabitLog
 	err := row.Scan(
 		&i.ID,

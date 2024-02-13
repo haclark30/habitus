@@ -63,10 +63,13 @@ func main() {
 		r.Put("/habit", habitHandler.Put)
 		r.Get("/habitModal", habitHandler.Modal)
 		r.Get("/habit/{habitId}/edit", habitHandler.Edit)
+		r.Put("/habit/{habitId}/{habitLogId}", habitHandler.Update)
+		r.Delete("/habit/{habitId}", habitHandler.Delete)
 
 		r.Post("/{dailyId}/{dailyLogId}/done", dailyHandler.CompleteDaily)
 		r.Put("/daily", dailyHandler.Put)
 		r.Get("/dailyModal", dailyHandler.Modal)
+		r.Get("/daily/{dailyId}/edit", dailyHandler.Edit)
 	})
 	router.Get("/login", userHandler.GetLogin)
 	router.Post("/login", userHandler.PostLogin)

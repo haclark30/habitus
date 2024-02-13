@@ -72,6 +72,7 @@ func (u *UserHandler) PostLogin(w http.ResponseWriter, r *http.Request) {
 		Expires:  expiresAt,
 		HttpOnly: true,
 		Secure:   true,
+		Path:     "/",
 	})
 
 	w.Header().Set("hx-redirect", "/")

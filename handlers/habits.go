@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"fmt"
 	"habitus/components"
 	"habitus/db_sqlc"
 	"habitus/middleware"
@@ -91,5 +90,51 @@ func (h *HabitHandler) Edit(w http.ResponseWriter, r *http.Request) {
 	habitId, _ := strconv.Atoi(chi.URLParam(r, "habitId"))
 	habit, _ := h.queries.GetHabit(r.Context(), int64(habitId))
 
-	fmt.Fprintf(w, "got %v", habit.Name)
+	loc, _ := time.LoadLocation("America/Chicago")
+	year, month, day := time.Now().In(loc).Date()
+	t := time.Date(year, month, day, 0, 0, 0, 0, loc)
+
+	habitLog, _ := h.queries.GetHabitLog(r.Context(), db_sqlc.GetHabitLogParams{
+		Habitid:  habit.ID,
+		Datetime: t.Unix(),
+	})
+	components.EditHabit(habit, habitLog).Render(r.Context(), w)
+}
+
+func (h *HabitHandler) Update(w http.ResponseWriter, r *http.Request) {
+	habitId, _ := strconv.Atoi(chi.URLParam(r, "habitId"))
+	habitLogId, _ := strconv.Atoi(chi.URLParam(r, "habitLogId"))
+
+	r.ParseForm()
+	formHabitName := r.Form.Get("habitName")
+	formHasUp := r.Form.Get("hasUp")
+	formHasDown := r.Form.Get("hasDown")
+	formUpCount := r.Form.Get("upCount")
+	formDownCount := r.Form.Get("downCount")
+
+	habit, _ := h.queries.UpdateHabit(r.Context(), db_sqlc.UpdateHabitParams{
+		ID:      int64(habitId),
+		Name:    formHabitName,
+		Hasup:   formHasUp == "on",
+		Hasdown: formHasDown == "on",
+	})
+
+	upCount, _ := strconv.Atoi(formUpCount)
+	downCount, _ := strconv.Atoi(formDownCount)
+	habitLog, _ := h.queries.UpdateHabitLog(r.Context(), db_sqlc.UpdateHabitLogParams{
+		ID:        int64(habitLogId),
+		Upcount:   int64(upCount),
+		Downcount: int64(downCount),
+	})
+
+	components.Habit(habit, habitLog).Render(r.Context(), w)
+}
+
+func (h *HabitHandler) Delete(w http.ResponseWriter, r *http.Request) {
+	habitId, _ := strconv.Atoi(chi.URLParam(r, "habitId"))
+
+	// TODO: catch errors
+	h.queries.DeleteHabitLogs(r.Context(), int64(habitId))
+	h.queries.DeleteHabit(r.Context(), int64(habitId))
+	w.WriteHeader(http.StatusOK)
 }
